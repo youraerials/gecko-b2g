@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(MOZ_OBJDIR=objdir-bluejay-arm64 source:*)",
+      "Bash(MOZCONFIG=mozconfig-b2g ./mach build:*)",
+      "Bash(tee:*)",
+      "Bash(source:*)",
+      "Bash(export MOZCONFIG=$PWD/mozconfig-b2g)",
+      "Bash(gmake:*)",
+      "Bash(while true)",
+      "Bash(do sleep 30)",
+      "Bash(if tail -20 /tmp/build-continuation.log)",
+      "Bash(then echo \"=== BUILD FAILED ===\")",
+      "Bash(break)",
+      "Bash(elif tail -10 /tmp/build-continuation.log)",
+      "Bash(then echo \"=== BUILD PROGRESSING ===\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(export MOZ_CARGO_WRAP_HOST_LD=\"/usr/bin/gcc-13\":*)",
+      "Bash(export MOZ_CARGO_WRAP_HOST_LDFLAGS=\"\")",
+      "Bash(g++-13:*)",
+      "Bash(/home/aubrey/Work/gecko-b2g/build/cargo-host-linker:*)",
+      "Bash(/usr/bin/ld:*)",
+      "Bash(/usr/bin/g++-13:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git clone:*)",
+      "Bash(./configure:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

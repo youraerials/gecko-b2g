@@ -8,7 +8,8 @@
 #define nsRilWorker_H
 #if ANDROID_VERSION >= 33
 #include "nsIRadioProxyServiceManager.h"
-#include <android/hardware/radio/1.6/IRadio.h>
+// Use Radio 1.4 for vanilla AOSP (1.6 not available in vanilla Pixel builds)
+#include <android/hardware/radio/1.4/IRadio.h>
 #else
 #include <android/hardware/radio/1.1/IRadio.h>
 #endif

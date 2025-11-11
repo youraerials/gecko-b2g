@@ -84,7 +84,8 @@ nsresult GonkCameraParameters::Unflatten(const String8& aFlatParameters) {
   MutexAutoLock lock(mLock);
   mParams.Clear();
 
-  const char* data = aFlatParameters.string();
+  // Android 14+ made String8::string() private, use c_str() instead
+  const char* data = aFlatParameters.c_str();
   while (data && *data) {
     const char* pos = strchr(data, '=');
     if (!pos) {

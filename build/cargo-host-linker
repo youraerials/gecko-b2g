@@ -1,3 +1,16 @@
 #!/bin/sh
 # See comment in cargo-linker.
-eval ${MOZ_CARGO_WRAP_HOST_LD} ${MOZ_CARGO_WRAP_HOST_LDFLAGS} '"$@"'
+# For host builds, we MUST use the system GNU linker (ld.bfd), not Android NDK's ld.lld
+# Remove NDK from PATH and use -fuse-ld=bfd to force GNU ld
+
+# Filter out Android NDK from PATH to prevent finding ld.lld
+FILTERED_PATH=$(echo "$PATH" | tr ':' '\n' | grep -v 'android-ndk' | grep -v '/mozbuild/clang/bin' | tr '\n' ':' | sed 's/:$//')
+export PATH="$FILTERED_PATH"
+
+# Use the specified host linker, or default to /usr/bin/g++-13
+HOST_LD="${MOZ_CARGO_WRAP_HOST_LD:-/usr/bin/g++-13}"
+
+# Force use of GNU BFD linker (system /usr/bin/ld)
+# -fuse-ld=bfd tells GCC to use the BFD linker instead of gold or lld
+# Add system library paths for libstdc++ and other system libraries
+exec $HOST_LD -fuse-ld=bfd -L/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/x86_64-linux-gnu "$@"

@@ -44,7 +44,8 @@ class VoldListener : public android::BinderService<VoldListener>,
       const ::std::string& partGuid) override;
 #endif
   android::binder::Status onVolumeStateChanged(const ::std::string& volId,
-                                               int32_t state) override;
+                                               int32_t state,
+                                               int32_t userId) override;
   android::binder::Status onVolumeMetadataChanged(
       const ::std::string& volId, const ::std::string& fsType,
       const ::std::string& fsUuid, const ::std::string& fsLabel) override;

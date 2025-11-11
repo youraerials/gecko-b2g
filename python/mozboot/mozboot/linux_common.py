@@ -70,16 +70,20 @@ class Boot2GeckoSysrootInstall(object):
     def install_b2g_packages(self, mozconfig_builder):
         from mozboot import android
 
+        os_arch = platform.machine()
         android.ensure_android(
-            "linux", ndk_only=False, no_interactive=self.no_interactive
+            "linux", os_arch, ndk_only=False, no_interactive=self.no_interactive
         )
 
     def ensure_b2g_sysroot_packages(self, state_dir, checkout_root):
         from mozboot import b2g_sysroot
 
-        self.install_toolchain_artifact(
-            state_dir, checkout_root, b2g_sysroot.LINUX_B2G_SYSROOT
-        )
+        self.install_toolchain_artifact(b2g_sysroot.LINUX_B2G_SYSROOT)
+
+    def ensure_b2g_packages(self):
+        # B2G packages are installed via install_b2g_packages()
+        # This method exists to match the bootstrap framework's expectations
+        pass
 
     def generate_b2g_mozconfig(self, artifact_mode=False):
         from mozboot import b2g

@@ -128,11 +128,13 @@ android::binder::Status VoldListener::onVolumeCreated(
 // Because VoldListener doesn't inherit nsISupport interface, we cannot just
 // use NewRunnableMethod to wrapp the function
 void redirectVolumeStateChanged(const ::std::string& volId, int32_t state) {
-  VoldListener::CreateInstance()->onVolumeStateChanged(volId, state);
+  VoldListener::CreateInstance()->onVolumeStateChanged(volId, state, /*userId=*/0);
 }
 
 android::binder::Status VoldListener::onVolumeStateChanged(
-    const ::std::string& volId, int32_t state) {
+    const ::std::string& volId, int32_t state, int32_t userId) {
+  // userId parameter added for Android 14 AIDL compatibility
+  (void)userId;  // Unused for now
   if (MessageLoop::current() != XRE_GetIOMessageLoop()) {
     XRE_GetIOMessageLoop()->PostTask(
         NewRunnableFunction("onVolumeStateChanged::iothread",

@@ -167,7 +167,8 @@ rust_host_cc_env_name := $(subst -,_,$(RUST_HOST_TARGET))
 # Ideally, we'd use CRATE_CC_NO_DEFAULTS=1, but that causes other problems at the
 # moment.
 export CC_$(rust_host_cc_env_name)=$(filter-out $(HOST_CC_BASE_FLAGS),$(HOST_CC))
-export CXX_$(rust_host_cc_env_name)=$(filter-out $(HOST_CXX_BASE_FLAGS),$(HOST_CXX))
+# Use system g++ for host C++ compilation to avoid NDK C++ stdlib issues
+export CXX_$(rust_host_cc_env_name)=/usr/bin/g++-13
 export AR_$(rust_host_cc_env_name)=$(HOST_AR)
 
 rust_cc_env_name := $(subst -,_,$(RUST_TARGET))

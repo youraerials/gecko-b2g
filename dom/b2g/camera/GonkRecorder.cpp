@@ -382,7 +382,7 @@ static bool safe_strtoi32(const char* s, int32_t* val) {
 // Trim both leading and trailing whitespace from the given string.
 static void TrimString(String8* s) {
   size_t num_bytes = s->bytes();
-  const char* data = s->string();
+  const char* data = s->c_str();
 
   size_t leading_space = 0;
   while (leading_space < num_bytes && isspace(data[leading_space])) {
@@ -645,111 +645,111 @@ status_t GonkRecorder::setParamGeoDataLatitude(int64_t latitudex10000) {
 }
 
 status_t GonkRecorder::setParameter(const String8& key, const String8& value) {
-  RE_LOGV("setParameter: key (%s) => value (%s)", key.string(), value.string());
+  RE_LOGV("setParameter: key (%s) => value (%s)", key.c_str(), value.c_str());
   if (key == "max-duration") {
     int64_t max_duration_ms;
-    if (safe_strtoi64(value.string(), &max_duration_ms)) {
+    if (safe_strtoi64(value.c_str(), &max_duration_ms)) {
       return setParamMaxFileDurationUs(1000LL * max_duration_ms);
     }
   } else if (key == "max-filesize") {
     int64_t max_filesize_bytes;
-    if (safe_strtoi64(value.string(), &max_filesize_bytes)) {
+    if (safe_strtoi64(value.c_str(), &max_filesize_bytes)) {
       return setParamMaxFileSizeBytes(max_filesize_bytes);
     }
   } else if (key == "interleave-duration-us") {
     int32_t durationUs;
-    if (safe_strtoi32(value.string(), &durationUs)) {
+    if (safe_strtoi32(value.c_str(), &durationUs)) {
       return setParamInterleaveDuration(durationUs);
     }
   } else if (key == "param-movie-time-scale") {
     int32_t timeScale;
-    if (safe_strtoi32(value.string(), &timeScale)) {
+    if (safe_strtoi32(value.c_str(), &timeScale)) {
       return setParamMovieTimeScale(timeScale);
     }
   } else if (key == "param-use-64bit-offset") {
     int32_t use64BitOffset;
-    if (safe_strtoi32(value.string(), &use64BitOffset)) {
+    if (safe_strtoi32(value.c_str(), &use64BitOffset)) {
       return setParam64BitFileOffset(use64BitOffset != 0);
     }
   } else if (key == "param-geotag-longitude") {
     int64_t longitudex10000;
-    if (safe_strtoi64(value.string(), &longitudex10000)) {
+    if (safe_strtoi64(value.c_str(), &longitudex10000)) {
       return setParamGeoDataLongitude(longitudex10000);
     }
   } else if (key == "param-geotag-latitude") {
     int64_t latitudex10000;
-    if (safe_strtoi64(value.string(), &latitudex10000)) {
+    if (safe_strtoi64(value.c_str(), &latitudex10000)) {
       return setParamGeoDataLatitude(latitudex10000);
     }
   } else if (key == "param-track-time-status") {
     int64_t timeDurationUs;
-    if (safe_strtoi64(value.string(), &timeDurationUs)) {
+    if (safe_strtoi64(value.c_str(), &timeDurationUs)) {
       return setParamTrackTimeStatus(timeDurationUs);
     }
   } else if (key == "audio-param-sampling-rate") {
     int32_t sampling_rate;
-    if (safe_strtoi32(value.string(), &sampling_rate)) {
+    if (safe_strtoi32(value.c_str(), &sampling_rate)) {
       return setParamAudioSamplingRate(sampling_rate);
     }
   } else if (key == "audio-param-number-of-channels") {
     int32_t number_of_channels;
-    if (safe_strtoi32(value.string(), &number_of_channels)) {
+    if (safe_strtoi32(value.c_str(), &number_of_channels)) {
       return setParamAudioNumberOfChannels(number_of_channels);
     }
   } else if (key == "audio-param-encoding-bitrate") {
     int32_t audio_bitrate;
-    if (safe_strtoi32(value.string(), &audio_bitrate)) {
+    if (safe_strtoi32(value.c_str(), &audio_bitrate)) {
       return setParamAudioEncodingBitRate(audio_bitrate);
     }
   } else if (key == "audio-param-time-scale") {
     int32_t timeScale;
-    if (safe_strtoi32(value.string(), &timeScale)) {
+    if (safe_strtoi32(value.c_str(), &timeScale)) {
       return setParamAudioTimeScale(timeScale);
     }
   } else if (key == "video-param-encoding-bitrate") {
     int32_t video_bitrate;
-    if (safe_strtoi32(value.string(), &video_bitrate)) {
+    if (safe_strtoi32(value.c_str(), &video_bitrate)) {
       return setParamVideoEncodingBitRate(video_bitrate);
     }
   } else if (key == "video-param-rotation-angle-degrees") {
     int32_t degrees;
-    if (safe_strtoi32(value.string(), &degrees)) {
+    if (safe_strtoi32(value.c_str(), &degrees)) {
       return setParamVideoRotation(degrees);
     }
   } else if (key == "video-param-i-frames-interval") {
     int32_t seconds;
-    if (safe_strtoi32(value.string(), &seconds)) {
+    if (safe_strtoi32(value.c_str(), &seconds)) {
       return setParamVideoIFramesInterval(seconds);
     }
   } else if (key == "video-param-encoder-profile") {
     int32_t profile;
-    if (safe_strtoi32(value.string(), &profile)) {
+    if (safe_strtoi32(value.c_str(), &profile)) {
       return setParamVideoEncoderProfile(profile);
     }
   } else if (key == "video-param-encoder-level") {
     int32_t level;
-    if (safe_strtoi32(value.string(), &level)) {
+    if (safe_strtoi32(value.c_str(), &level)) {
       return setParamVideoEncoderLevel(level);
     }
   } else if (key == "video-param-camera-id") {
     int32_t cameraId;
-    if (safe_strtoi32(value.string(), &cameraId)) {
+    if (safe_strtoi32(value.c_str(), &cameraId)) {
       return setParamVideoCameraId(cameraId);
     }
   } else if (key == "video-param-time-scale") {
     int32_t timeScale;
-    if (safe_strtoi32(value.string(), &timeScale)) {
+    if (safe_strtoi32(value.c_str(), &timeScale)) {
       return setParamVideoTimeScale(timeScale);
     }
   } else {
-    RE_LOGE("setParameter: failed to find key %s", key.string());
+    RE_LOGE("setParameter: failed to find key %s", key.c_str());
   }
   return BAD_VALUE;
 }
 
 status_t GonkRecorder::setParameters(const String8& params) {
-  RE_LOGV("setParameters: %s", params.string());
-  const char* cparams = params.string();
+  RE_LOGV("setParameters: %s", params.c_str());
+  const char* cparams = params.c_str();
   const char* key_start = cparams;
   for (;;) {
     const char* equal_pos = strchr(key_start, '=');
@@ -862,10 +862,11 @@ status_t GonkRecorder::start() {
 #if defined(MOZ_WIDGET_GONK)
 sp<MediaSource> GonkRecorder::createAudioSource() {
 #  if ANDROID_VERSION >= 34
+  // Android 14 vanilla AOSP doesn't have AVFactory - use AudioSource directly
   audio_attributes_t attr = AUDIO_ATTRIBUTES_INITIALIZER;
   attr.source = mAudioSource;
-  sp<AudioSource> audioSource = AVFactory::get()->createAudioSource(
-      &attr, AttributionSourceState(), mSampleRate, mAudioChannels);
+  sp<AudioSource> audioSource =
+      new AudioSource(&attr, AttributionSourceState(), mSampleRate, mAudioChannels);
 #  elif ANDROID_VERSION >= 30
   audio_attributes_t attr = AUDIO_ATTRIBUTES_INITIALIZER;
   attr.source = mAudioSource;
@@ -1966,7 +1967,7 @@ status_t GonkRecorder::dump(int fd, const Vector<String16>& args) const {
   result.append(buffer);
   snprintf(buffer, SIZE, "     Bit rate (bps): %d\n", mVideoBitRate);
   result.append(buffer);
-  ::write(fd, result.string(), result.size());
+  ::write(fd, result.c_str(), result.size());
   return OK;
 }
 

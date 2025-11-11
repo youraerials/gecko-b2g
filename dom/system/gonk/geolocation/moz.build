@@ -28,7 +28,9 @@ UNIFIED_SOURCES += [
     "GonkGPSGeolocationProvider.cpp",
 ]
 
-if CONFIG["ANDROID_VERSION"] >= "33":
+# Disable AIDL GNSS for vanilla AOSP builds (Pixel doesn't build GNSS AIDL headers)
+# Fall back to HIDL HAL which has proper NDK support
+if False:  # CONFIG["ANDROID_VERSION"] >= "33":
     UNIFIED_SOURCES += [
         "AidlCallback.cpp",
     ]

@@ -520,9 +520,10 @@ class TestGonkCameraHardware::PushParametersDelegate : public ControlMessage {
       return NS_ERROR_INVALID_ARG;
     }
 
-    DOM_CAMERA_LOGI("Push test parameters: %s\n", mParams->string());
+    // Android 14+ made String8::string() private, use c_str() instead
+    DOM_CAMERA_LOGI("Push test parameters: %s\n", mParams->c_str());
     return mJSTestWrapper->PushParameters(
-        NS_ConvertASCIItoUTF16(mParams->string()));
+        NS_ConvertASCIItoUTF16(mParams->c_str()));
   }
 
   String8* mParams;

@@ -324,7 +324,7 @@ class Bootstrapper(object):
 
         self.instance = cls(**args)
 
-    def maybe_install_private_packages_or_exit(self, application, checkout_type):
+    def maybe_install_private_packages_or_exit(self, application, checkout_type, state_dir, checkout_root):
         # Install the clang packages needed for building the style system, as
         # well as the version of NodeJS that we currently support.
         # Also install the clang static-analysis package by default
@@ -468,7 +468,7 @@ class Bootstrapper(object):
                     checkout_root,
                 )
 
-        self.maybe_install_private_packages_or_exit(application, checkout_type)
+        self.maybe_install_private_packages_or_exit(application, checkout_type, state_dir, checkout_root)
         self.check_code_submission(checkout_root)
         # Wait until after moz-phab setup to check telemetry so that employees
         # will be automatically opted-in.

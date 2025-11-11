@@ -296,9 +296,16 @@ sp<GonkCameraHardware> GonkCameraHardware::Connect(
     } while (true);
 
     gCameraService = interface_cast<hardware::ICameraService>(binder);
+#  if ANDROID_VERSION >= 34
+    // Android 14+ uses std::string instead of String16
+    gCameraService->supportsCameraApi(
+        std::string(String8::format("%d", aCameraId).c_str()),
+        hardware::ICameraService::API_VERSION_2, &isCameraAPI2Supported);
+#  else
     gCameraService->supportsCameraApi(
         String16(String8::format("%d", aCameraId)),
         hardware::ICameraService::API_VERSION_2, &isCameraAPI2Supported);
+#  endif
 
 #  if ANDROID_VERSION < 31
     // tmp solution to force using connect_legacy for QCOM platform.
@@ -320,7 +327,15 @@ sp<GonkCameraHardware> GonkCameraHardware::Connect(
     /* bug-82626: Retry Camera::connect each 2 ms delay since there is a chance
      * that EVENT_USER_SWITCHED being handled after Camera::connect. */
     while (true) {
-#  if ANDROID_VERSION >= 31
+#  if ANDROID_VERSION >= 34
+      // Android 14+ uses std::string instead of String16
+      camera = Camera::connect(aCameraId,
+                               /* clientPackageName */ std::string("gonk.camera"),
+                               Camera::USE_CALLING_UID, Camera::USE_CALLING_PID,
+                               /* targetSdkVersion */ 29,
+                               /* overrideToPortrait */ false,
+                               /* forceSlowJpegMode */ false);
+#  elif ANDROID_VERSION >= 31
       camera = Camera::connect(aCameraId,
                                /* clientPackageName */ String16("gonk.camera"),
                                Camera::USE_CALLING_UID, Camera::USE_CALLING_PID,

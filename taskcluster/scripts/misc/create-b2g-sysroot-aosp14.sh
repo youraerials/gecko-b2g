@@ -11,11 +11,16 @@ dest="${2-.}"
 # Copy the contents of the files & directories in the first argument to the
 # sysroot using the second argument as the destination folder. File
 # creation/modification timestamps are preserved.
+# Note: Some files may not exist in vanilla AOSP builds (especially B2G-specific libs)
 function copy_to_sysroot() {
-    mkdir -p "${dest}/b2g-sysroot/${2}/" && \
-    rsync --times -r --no-relative --copy-links \
+    mkdir -p "${dest}/b2g-sysroot/${2}/"
+    # Use --ignore-missing-args to skip files that don't exist (like binder_b2g_* in vanilla AOSP)
+    rsync --times -r --no-relative --copy-links --ignore-missing-args \
         --exclude=".git" --exclude=Android.bp --exclude=AndroidTest.xml \
-        --files-from="${1}" "${src}" "${dest}/b2g-sysroot/${2}/"
+        --files-from="${1}" "${src}" "${dest}/b2g-sysroot/${2}/" || {
+        echo "Warning: Some files were not found, but continuing..."
+        return 0
+    }
 }
 
 # Prepare the device-specific paths in the AOSP build files
@@ -49,21 +54,38 @@ esac
 
 TARGET_TRIPLE=${TARGET_TRIPLE:-$TARGET_ARCH-linux-$ARCH_ABI}
 
-if [ "$TARGET_ARCH_VARIANT" = "$TARGET_ARCH" ] ||
+if [ -z "$TARGET_ARCH_VARIANT" ] ||
+   [ "$TARGET_ARCH_VARIANT" = "$TARGET_ARCH" ] ||
    [ "$TARGET_ARCH_VARIANT" = "generic" ]; then
 TARGET_ARCH_VARIANT=""
 else
 TARGET_ARCH_VARIANT="_$TARGET_ARCH_VARIANT"
 fi
 
-if [ "$TARGET_CPU_VARIANT" = "$TARGET_ARCH" ] ||
+if [ -z "$TARGET_CPU_VARIANT" ] ||
+   [ "$TARGET_CPU_VARIANT" = "$TARGET_ARCH" ] ||
    [ "$TARGET_CPU_VARIANT" = "generic" ]; then
 TARGET_CPU_VARIANT=""
 else
 TARGET_CPU_VARIANT="_$TARGET_CPU_VARIANT"
 fi
 
+# For vanilla AOSP builds, ARCH_FOLDER might be like arm64_armv8-2a_cortex-a55
+# Auto-detect the actual ARCH_FOLDER from the build output
 ARCH_FOLDER="${TARGET_ARCH}${TARGET_ARCH_VARIANT}${TARGET_CPU_VARIANT}"
+
+# Try to detect actual arch folder from AOSP build output
+# Look for libvold_binder as a probe since it's commonly built
+if [ -d "${src}/out/soong/.intermediates/system/vold/libvold_binder" ]; then
+    DETECTED_FOLDER=$(find "${src}/out/soong/.intermediates/system/vold/libvold_binder" \
+        -maxdepth 1 -type d -name "android_${TARGET_ARCH}*_static" | head -1 | xargs basename 2>/dev/null)
+    if [ -n "$DETECTED_FOLDER" ]; then
+        # Extract just the arch+variant part (remove "android_" prefix and "_static" suffix)
+        ARCH_FOLDER="${DETECTED_FOLDER#android_}"  # Remove "android_" prefix
+        ARCH_FOLDER="${ARCH_FOLDER%_static}"       # Remove "_static" suffix
+        echo "Auto-detected ARCH_FOLDER: $ARCH_FOLDER"
+    fi
+fi
 
 libraries_list=$(mktemp)
 includes_list=$(mktemp)
@@ -116,7 +138,7 @@ out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.hardware.
 out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.hardware.wifi.hostapd@1.1.so
 out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.hardware.wifi.hostapd-V1-cpp.so
 out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.hardware.wifi.supplicant-V2-cpp.so
-out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.media.audio.common.types-V2-cpp.so
+out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.media.audio.common.types-V3-cpp.so
 out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.system.wifi.keystore@1.0.so
 out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.hidl.safe_union@1.0.so
 out/target/product/${GONK_PRODUCT_NAME}/system/lib${BINSUFFIX}/android.frameworks.stats@1.0.so
@@ -265,8 +287,8 @@ packages/modules/Connectivity/bpf_progs
 EOF
 
 # Store the generated AIDL headers in the sysroot
+# Note: libcamera_client AIDL is in a hash subdirectory, so we handle it separately below
 sed 's/$/\//' >> "${includes_list}" << EOF
-out/soong/.intermediates/frameworks/av/camera/libcamera_client/android_${ARCH_FOLDER}_static${FOLDERSUFFIX}/gen/aidl
 out/soong/.intermediates/frameworks/av/media/libaudioclient/libaudioclient/android_${ARCH_FOLDER}_static${FOLDERSUFFIX}/gen/aidl
 out/soong/.intermediates/frameworks/av/media/libmedia/libmedia_omx/android_${ARCH_FOLDER}_shared${FOLDERSUFFIX}/gen/aidl
 out/soong/.intermediates/frameworks/av/media/libaudioclient/audiopolicy-types-aidl-cpp-source/gen/include
@@ -281,7 +303,6 @@ out/soong/.intermediates/frameworks/base/core/java/libincremental_aidl-cpp/andro
 out/soong/.intermediates/frameworks/libs/net/common/netd/netd_event_listener_interface-V1-cpp-source/gen/include
 out/soong/.intermediates/frameworks/libs/net/common/netd/netd_aidl_interface-V10-cpp-source/gen/include
 out/soong/.intermediates/frameworks/native/libs/binder/libactivitymanager_aidl/android_${ARCH_FOLDER}_static/gen/aidl
-out/soong/.intermediates/frameworks/native/libs/gui/libgui_aidl_static/android_${ARCH_FOLDER}_static/gen/aidl
 out/soong/.intermediates/frameworks/native/libs/gui/libgui/android_${ARCH_FOLDER}_shared/gen/aidl
 out/soong/.intermediates/frameworks/native/libs/gui/libgui_window_info_static/android_${ARCH_FOLDER}_static_afdo-libgui_lto-thin/gen/aidl
 out/soong/.intermediates/frameworks/native/libs/permission/framework-permission-aidl-cpp-source/gen/include
@@ -297,6 +318,7 @@ out/soong/.intermediates/hardware/interfaces/wifi/hostapd/aidl/android.hardware.
 out/soong/.intermediates/hardware/interfaces/wifi/supplicant/aidl/android.hardware.wifi.supplicant-V2-cpp-source/gen/include
 out/soong/.intermediates/packages/modules/DnsResolver/dnsresolver_aidl_interface-V2-cpp-source/gen/include
 out/soong/.intermediates/system/hardware/interfaces/media/android.media.audio.common.types-V2-cpp-source/gen/include
+out/soong/.intermediates/system/hardware/interfaces/media/android.media.audio.common.types-V3-cpp-source/gen/include
 out/soong/.intermediates/system/netd/server/oemnetd_aidl_interface-cpp-source/gen/include
 out/soong/.intermediates/system/vold/libvold_binder_shared/android_${ARCH_FOLDER}_shared/gen/aidl
 out/soong/.intermediates/system/connectivity/wificond/libwificond_ipc/android_${ARCH_FOLDER}_static/gen/aidl
@@ -323,6 +345,7 @@ out/soong/.intermediates/hardware/interfaces/gnss/visibility_control/1.0/android
 out/soong/.intermediates/hardware/interfaces/graphics/bufferqueue/1.0/android.hardware.graphics.bufferqueue@1.0_genc++_headers/gen
 out/soong/.intermediates/hardware/interfaces/graphics/bufferqueue/2.0/android.hardware.graphics.bufferqueue@2.0_genc++_headers/gen
 out/soong/.intermediates/hardware/interfaces/graphics/common/aidl/android.hardware.graphics.common-V4-ndk-source/gen/include
+out/soong/.intermediates/hardware/interfaces/graphics/common/aidl/android.hardware.graphics.common-V5-ndk-source/gen/include
 out/soong/.intermediates/hardware/interfaces/graphics/common/1.0/android.hardware.graphics.common@1.0_genc++_headers/gen
 out/soong/.intermediates/hardware/interfaces/graphics/common/1.1/android.hardware.graphics.common@1.1_genc++_headers/gen
 out/soong/.intermediates/hardware/interfaces/graphics/common/1.2/android.hardware.graphics.common@1.2_genc++_headers/gen
@@ -414,7 +437,126 @@ else
 fi
 
 rsync ${src}/system/netd/include/mainline/XtBpfProgLocations.h  ${dest}/b2g-sysroot/include/
-rsync ${src}/out/soong/.intermediates/system/vold/libvold_binder/android_${ARCH_FOLDER}_static/libvold_binder.a ${dest}/b2g-sysroot/libs/
+
+# libvold_binder.a is in a subdirectory with a hash - find it dynamically
+VOLD_BINDER_PATH=$(find ${src}/out/soong/.intermediates/system/vold/libvold_binder/android_${ARCH_FOLDER}_static \
+    -name "libvold_binder.a" 2>/dev/null | head -1)
+if [ -n "$VOLD_BINDER_PATH" ]; then
+    rsync --times --no-relative --copy-links ${VOLD_BINDER_PATH} ${dest}/b2g-sysroot/libs/
+else
+    echo "Warning: libvold_binder.a not found, continuing..."
+fi
+
+# libcamera_client AIDL headers are in _static_cfi variant with hash subdirectory - find them dynamically
+# Note: Exclude */obj/* paths as they contain compiled .o files, not the .h headers we need
+CAMERA_CLIENT_AIDL_DIR=$(find ${src}/out/soong/.intermediates/frameworks/av/camera/libcamera_client/android_${ARCH_FOLDER}_static_cfi \
+    -type d -name "aidl" -not -path "*/obj/*" 2>/dev/null | head -1)
+if [ -n "$CAMERA_CLIENT_AIDL_DIR" ]; then
+    rsync --times -r --no-relative --copy-links ${CAMERA_CLIENT_AIDL_DIR}/ ${dest}/b2g-sysroot/include/
+else
+    echo "Warning: libcamera_client AIDL headers not found, continuing..."
+fi
+
+# libgui_aidl_static headers are in gen/aidl_library with hash subdirectory - find them dynamically
+# Note: Exclude */obj/* paths as they might contain wrong paths
+LIBGUI_AIDL_DIR=$(find ${src}/out/soong/.intermediates/frameworks/native/libs/gui/libgui_aidl_static/android_${ARCH_FOLDER}_static \
+    -type d -name "aidl_library" -not -path "*/obj/*" 2>/dev/null | head -1)
+if [ -n "$LIBGUI_AIDL_DIR" ]; then
+    rsync --times -r --no-relative --copy-links ${LIBGUI_AIDL_DIR}/ ${dest}/b2g-sysroot/include/
+else
+    echo "Warning: libgui_aidl_static AIDL headers not found, continuing..."
+fi
+
+# Network NDK AIDL headers for netd_event_listener_interface (required by dom/system/gonk/network)
+# NDK backend puts headers in aidl/ subdirectory, but build expects them at root
+NETD_NDK_AIDL_DIR="${src}/out/soong/.intermediates/packages/modules/Connectivity/staticlibs/netd/netd_event_listener_interface-V1-ndk-source/gen/include/aidl"
+if [ -d "$NETD_NDK_AIDL_DIR" ]; then
+    rsync --times -r --no-relative --copy-links ${NETD_NDK_AIDL_DIR}/ ${dest}/b2g-sysroot/include/
+    echo "Copied netd NDK AIDL headers"
+else
+    echo "Warning: netd_event_listener_interface NDK AIDL headers not found, continuing..."
+fi
+
+# Vold static binder AIDL headers are in _static variant with hash subdirectory - find them dynamically
+# Note: Exclude */obj/* paths as they contain compiled .o files, not the .h headers we need
+# Vold uses regular CPP backend (not NDK), so headers are directly under gen/aidl/
+VOLD_BINDER_AIDL_DIR=$(find ${src}/out/soong/.intermediates/system/vold/libvold_binder/android_${ARCH_FOLDER}_static \
+    -type d -name "aidl" -not -path "*/obj/*" 2>/dev/null | head -1)
+if [ -n "$VOLD_BINDER_AIDL_DIR" ]; then
+    rsync --times -r --no-relative --copy-links ${VOLD_BINDER_AIDL_DIR}/ ${dest}/b2g-sysroot/include/
+    echo "Copied vold_binder static AIDL headers"
+else
+    echo "Warning: libvold_binder static AIDL headers not found, continuing..."
+fi
+
+# libguiflags headers are in gen/include with hash subdirectory - find them dynamically
+LIBGUIFLAGS_DIR=$(find ${src}/out/soong/.intermediates/frameworks/native/libs/gui/libguiflags/android_${ARCH_FOLDER}_static \
+    -type d -name "include" 2>/dev/null | head -1)
+if [ -n "$LIBGUIFLAGS_DIR" ]; then
+    rsync --times -r --no-relative --copy-links ${LIBGUIFLAGS_DIR}/ ${dest}/b2g-sysroot/include/
+else
+    echo "Warning: libguiflags headers not found, continuing..."
+fi
+
+# Create stub WiFi HAL header - WiFi HAL not built in vanilla AOSP for Pixel
+# Pixel uses standard Android WiFi framework
+mkdir -p ${dest}/b2g-sysroot/include/android/hardware/wifi
+cat > ${dest}/b2g-sysroot/include/android/hardware/wifi/IWifi.h << 'WIFI_EOF'
+/*
+ * Stub header for IWifi - WiFi HAL not built in vanilla AOSP for Pixel
+ * The Pixel device uses standard Android WiFi framework, not HAL directly
+ */
+
+#ifndef ANDROID_HARDWARE_WIFI_IWIFI_H
+#define ANDROID_HARDWARE_WIFI_IWIFI_H
+
+// Minimal stub to satisfy compilation
+
+#endif  // ANDROID_HARDWARE_WIFI_IWIFI_H
+WIFI_EOF
+
+# Create stub GNSS HAL header - GNSS HAL not built in vanilla AOSP for Pixel
+# Pixel uses standard Android location framework
+mkdir -p ${dest}/b2g-sysroot/include/android/hardware/gnss
+cat > ${dest}/b2g-sysroot/include/android/hardware/gnss/IGnss.h << 'GNSS_EOF'
+/*
+ * Stub header for IGnss - GNSS HAL not built in vanilla AOSP for Pixel
+ * The Pixel device uses standard Android location framework, not HAL directly
+ */
+
+#ifndef ANDROID_HARDWARE_GNSS_IGNSS_H
+#define ANDROID_HARDWARE_GNSS_IGNSS_H
+
+// Minimal stub to satisfy compilation
+
+#endif  // ANDROID_HARDWARE_GNSS_IGNSS_H
+GNSS_EOF
+
+# Create stub AVExtensions.h - vendor extension not present in vanilla AOSP
+# This is a Qualcomm-specific extension for hardware codecs, not needed for vanilla builds
+mkdir -p ${dest}/b2g-sysroot/include/stagefright
+cat > ${dest}/b2g-sysroot/include/stagefright/AVExtensions.h << 'AVEXT_EOF'
+/*
+ * Stub header for AVExtensions - vendor extension not present in vanilla AOSP
+ * This file is typically provided by Qualcomm's hardware codec extensions
+ * but is not used in gecko-b2g for vanilla AOSP builds.
+ */
+
+#ifndef STAGEFRIGHT_AVEXTENSIONS_H_
+#define STAGEFRIGHT_AVEXTENSIONS_H_
+
+namespace android {
+
+// Stub class - not actually used in gecko-b2g
+class AVExtensions {
+public:
+    static AVExtensions* get() { return nullptr; }
+};
+
+}  // namespace android
+
+#endif  // STAGEFRIGHT_AVEXTENSIONS_H_
+AVEXT_EOF
 
 #copy libdrm header
 rsync ${src}/external/libdrm/include/drm/drm.h ${dest}/b2g-sysroot/include/

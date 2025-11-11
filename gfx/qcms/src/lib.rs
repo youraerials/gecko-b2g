@@ -7,7 +7,7 @@
 #![allow(non_upper_case_globals)]
 // These are needed for the neon SIMD code and can be removed once the MSRV supports the
 // instrinsics we use
-#![cfg_attr(feature = "neon", feature(stdsimd))]
+// Note: stdsimd feature removed - intrinsics are stable in Rust 1.79.0
 #![cfg_attr(
     feature = "neon",
     feature(arm_target_feature, raw_ref_op)

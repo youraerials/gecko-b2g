@@ -15,7 +15,8 @@
 #include <aidl/android/hardware/radio/sim/BnRadioSimIndication.h>
 #include <aidl/android/hardware/radio/sim/BnRadioSimResponse.h>
 #include <aidl/android/hardware/radio/sim/IRadioSim.h>
-#include <android/hardware/radio/1.6/IRadio.h>
+// Use Radio 1.4 for vanilla AOSP (1.6 not available in vanilla Pixel builds)
+#include <android/hardware/radio/1.4/IRadio.h>
 #else
 #include <android/hardware/radio/1.1/IRadio.h>
 #endif

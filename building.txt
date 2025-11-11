@@ -1,0 +1,16 @@
+ After AOSP builds successfully:
+
+  cd /home/aubrey/Work/gecko-b2g
+
+  # Set up environment
+  source setup-pixel6a-env.sh
+
+  # First time only: bootstrap gecko dependencies
+  ./mach bootstrap
+  # Choose: 4. GeckoView/Firefox for Android
+
+  # Build gecko-b2g
+  ./build-b2g.sh
+
+  # Package it
+  ./build-b2g.sh package

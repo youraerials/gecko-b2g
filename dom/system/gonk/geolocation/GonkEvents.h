@@ -6,7 +6,9 @@
 
 #pragma once
 
-#if ANDROID_VERSION >= 33
+// Disable AIDL GNSS for vanilla AOSP builds (Pixel doesn't build GNSS AIDL headers)
+// Fall back to HIDL HAL which has proper NDK support
+#if 0  // ANDROID_VERSION >= 33
 #  define AIDL_GNSS
 #  define GNSS android::hardware::gnss
 #endif

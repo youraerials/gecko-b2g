@@ -2,6 +2,12 @@
 
 set -e
 
+# Source environment setup if it exists and variables aren't already set
+if [ -z "${GONK_PATH}" ] && [ -f "$(dirname "$0")/setup-pixel6a-env.sh" ]; then
+    echo "Sourcing setup-pixel6a-env.sh..."
+    source "$(dirname "$0")/setup-pixel6a-env.sh"
+fi
+
 export RUSTUP_TOOLCHAIN=${RUSTUP_TOOLCHAIN:-stable}
 
 if [ -z ${GECKO_OBJDIR+x} ]; then
@@ -66,6 +72,11 @@ TARGET_GCC_VERSION=${TARGET_GCC_VERSION:-4.9}
 export CLANG_PATH=${CLANG_PATH:-$HOME/.mozbuild/clang/bin}
 
 export PYTHON_PATH=${PYTHON_PATH:-/usr/bin}
+
+# For host builds (Rust crates like glslopt that compile C++ for the host),
+# use system compiler. The NDK clang++ doesn't have C++ standard library for host builds.
+export CC_x86_64_unknown_linux_gnu=${CC_x86_64_unknown_linux_gnu:-/usr/bin/gcc-13}
+export CXX_x86_64_unknown_linux_gnu=${CXX_x86_64_unknown_linux_gnu:-/usr/bin/g++-13}
 
 case $TARGET_ARCH in
     arm)

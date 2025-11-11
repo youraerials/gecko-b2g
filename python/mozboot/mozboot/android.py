@@ -700,6 +700,11 @@ def android_ndk_url(os_name, ver=NDK_VERSION):
     else:
         arch = "x86"
 
+    # NDK r26c changed naming convention - no architecture suffix for x86_64
+    # Correct URL is: android-ndk-r26c-linux.zip (not android-ndk-r26c-linux-x86_64.zip)
+    if ver == "r26c" and arch == "x86_64":
+        return "%s-%s-%s.%s" % (base_url, ver, os_name, ndk_file_extension)
+
     return "%s-%s-%s-%s.%s" % (base_url, ver, os_name, arch, ndk_file_extension)
 
 

@@ -18,6 +18,14 @@ export LLVMCONFIG=$TOOLCHAIN/bin/llvm-config
 export AR=$TOOLCHAIN/bin/llvm-ar
 export NM=$TOOLCHAIN/bin/llvm-nm
 export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+
+# For host builds (Rust crates like glslopt), use system compiler
+# The NDK clang++ doesn't have C++ standard library for host builds
+export CC_x86_64_unknown_linux_gnu=/usr/bin/gcc-13
+export CXX_x86_64_unknown_linux_gnu=/usr/bin/g++-13
+# For Rust host linking, use g++ with explicit system linker (not NDK's ld.lld)
+export MOZ_CARGO_WRAP_HOST_LD="/usr/bin/g++-13"
+export MOZ_CARGO_WRAP_HOST_LDFLAGS="-fuse-ld=/usr/bin/ld"
 fi
 
 # Build B2G
@@ -115,6 +123,11 @@ if [ "$PLATFORM_VERSION" != "30" ]; then
 ac_add_options --enable-b2g-camera
 ac_add_options --enable-b2g-fm
 ac_add_options --enable-b2g-mediadrm
+fi
+
+# Disable WiFi HAL for Android 34 vanilla AOSP (Pixel doesn't build WiFi HAL C++ headers)
+if [ "$PLATFORM_VERSION" = "34" ]; then
+  ac_add_options --disable-wifi-support
 fi
 
 ac_add_options --enable-forkserver
